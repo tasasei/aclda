@@ -1,15 +1,17 @@
 library(MASS)
 
-aclda <- function(d,label,CV="loo"){
-    ## make seat
-    x <- list()
-    ## browser()
-    for( i in (1:ncol(d)) ){
-        x[[i]] <- c(FALSE,TRUE)
+aclda <- function(d,label,CV="loo",seat=c(),missprint=FALSE){
+    if(!(length(seat)>0)){
+        ## make seat
+        x <- list()
+        ## browser()
+        for( i in (1:ncol(d)) ){
+            x[[i]] <- c(FALSE,TRUE)
+        }
+        seat <- expand.grid(x)
+        names(seat) <- names(d)
+        seat <- seat[-which(apply(seat,1,sum)<2),]
     }
-    seat <- expand.grid(x)
-    names(seat) <- names(d)
-    seat <- seat[-which(apply(seat,1,sum)<2),]
 
     ## run lda
     accuracy <- c()
@@ -21,9 +23,11 @@ aclda <- function(d,label,CV="loo"){
                 e <- try(m <- lda(as.matrix(d[-(j),tmp.col]),label[-(j)]),silent=TRUE)
                 if(class(e)=="try-error"){
                     tmp.acu <- tmp.acu + 0
+                    if(missprint) print(paste("lda-error. miss row is ",as.character(j),sep=""))
                 }else{
                     res <- predict(m,d[j,tmp.col])
                     tmp.acu <- tmp.acu + as.numeric(res$class == label[j])
+                    if(missprint && res$class != label[j]) print(paste("miss row is ",as.character(j),sep=""))
                 }
             }
             accuracy <- c(accuracy,tmp.acu/nrow(d))
@@ -36,10 +40,6 @@ aclda <- function(d,label,CV="loo"){
     seat <- cbind(seat,accuracy)
     
     return(seat)
-}
-
-loo <- function(){
-    
 }
 
 
