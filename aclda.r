@@ -1,10 +1,10 @@
 library(MASS)
+library(ROCR)
 
-aclda <- function(d,label,CV="loo",seat=c(),missprint=FALSE){
+aclda <- function(d,label,CV="loo",seat=c(),measure="accuracy",missprint=FALSE){
     if(!(length(seat)>0)){
         ## make seat
         x <- list()
-        ## browser()
         for( i in (1:ncol(d)) ){
             x[[i]] <- c(FALSE,TRUE)
         }
@@ -17,35 +17,73 @@ aclda <- function(d,label,CV="loo",seat=c(),missprint=FALSE){
     accuracy <- c()
     for( i in (1:nrow(seat) )){
         tmp.col <- which(unlist(seat[i,]))
-        if(CV=="loo"){
-            tmp.acu <- 0
-            for( j in 1:nrow(d) ){
-                e <- try(m <- lda(as.matrix(d[-(j),tmp.col]),label[-(j)]),silent=TRUE)
-                if(class(e)=="try-error"){
-                    tmp.acu <- tmp.acu + 0
-                    if(missprint) print(paste("lda-error. miss row is ",as.character(j),sep=""))
-                }else{
-                    res <- predict(m,d[j,tmp.col])
-                    tmp.acu <- tmp.acu + as.numeric(res$class == label[j])
-                    if(missprint && res$class != label[j]) print(paste("miss row is ",as.character(j),sep=""))
-                }
-            }
-            accuracy <- c(accuracy,tmp.acu/nrow(d))
-        }else{
-            m <- lda(as.matrix(d[,tmp.col]),label)
-            res <- predict(m,d[,tmp.col])
-            accuracy <- c(accuracy,sum(res$class == label)/length(res$class))
-        }
+        accuracy <- c(accuracy,get.measure(d[,tmp.col],label,measure))
     }
     seat <- cbind(seat,accuracy)
-    
+    names(seat)[ncol(seat)] <- "measure"
     return(seat)
 }
 
+get.measure <- function(d,cls,measure="accuracy"){ # d = data.frame
+    if(measure=="auc"){
+        mdl <- lda(d,cls)
+        res <- predict(mdl,d)
+        return(get.auc(res$x,cls))
+    }
+
+    
+    if(nrow(d) != length(cls)){
+        print("caution!!")
+        return(0)
+    }
+    cls <- as.factor(cls)
+    uniqcls <- unique(cls)
+    if(length(uniqcls)>2){
+        print("caution!!")
+        return(0)
+    }
+    tmp <- sum(cls==uniqcls[1])
+    if(sum(cls==uniqcls[2]) > tmp){
+        PosClass <- uniqcls[1]
+    }else{
+        PosClass <- uniqcls[2]
+    }
+    
+    pos.row <- c()
+    neg.row <- c()
+    for( i in 1:nrow(d) ){
+        mdl <- lda(d[-i,],cls[-i])
+        res <- predict(mdl,d[i,])
+        if( res$class == PosClass ){
+            pos.row <- c(pos.row,i)
+        }else{
+            neg.row <- c(neg.row,i)
+        }
+    }
+    TP <- sum(cls[pos.row] == PosClass)
+    FP <- sum(cls[pos.row] != PosClass)
+    TN <- sum(cls[neg.row] != PosClass)
+    FN <- sum(cls[neg.row] == PosClass)
+    if(measure=="accuracy"){
+        return((TP+TN)/(TP+TN+FN+FP))
+    }
+    else if(measure=="F"){
+        prec <- TP / (TP + FP)
+        reca <- TP / (TP + FN)
+        return((2*reca * prec) / (reca + prec))
+    }
+}
+
+get.auc <- function(x,cls){
+    pred <- prediction(x,cls)
+    perf <- performance(pred,"auc")
+    auc <- as.numeric(perf@y.values)
+    return(auc)
+}
 
 # 入力 x(matrix) をテキスト付きプロット
 image_text<- function(x,#RemNum,
-                       main1=c(),dig=3,xcex=1.0,...){ #
+                       main=c(),dig=3,xcex=1.0,...){ #
     ## main <- c()
     logic.point <- which(x[1,]==TRUE)
     logic.point <- c(logic.point,which(x[1,]==FALSE))
@@ -67,7 +105,7 @@ image_text<- function(x,#RemNum,
     x2 <- x
     ## x2[,(ncol(x)-RemNum):ncol(x)] <- FALSE
     x2[,-(logic.point)] <- FALSE
-    image(t(x2[nrow(x2):1,ncol(x2):1])[ncol(x2):1,],col=c(rep("white",1000),"black"),axes=FALSE,main=main1) #axes=F で軸消去
+    image(t(x2[nrow(x2):1,ncol(x2):1])[ncol(x2):1,],col=c(rep("white",1000),"black"),axes=FALSE,main=main) #axes=F で軸消去
     text(xy,labels=signif(x,digits=dig))
     mtext(text=colnames(x),side=1,at=(0:(ncol(x)-1)/(ncol(x)-1)),las=3,cex=xcex)#列名
     mtext(text=rev(row(x)[,1]),side=2,at=(0:(nrow(x)-1)/(nrow(x)-1)),las=1)#行数
