@@ -26,12 +26,13 @@ aclda <- function(d,label,CV="loo",seat=c(),measure="accuracy",missprint=FALSE){
 
 get.measure <- function(d,cls,measure="accuracy"){ # d = data.frame
     if(measure=="auc"){
-        mdl <- lda(d,cls)
-        res <- predict(mdl,d)
+        mdl <- lda(as.matrix(d),cls)
+        ## browser()
+        res <- predict(mdl,as.matrix(d))
         return(get.auc(res$x,cls))
     }
 
-    
+    d <- as.data.frame(d)
     if(nrow(d) != length(cls)){
         print("caution!!")
         return(0)
@@ -52,7 +53,7 @@ get.measure <- function(d,cls,measure="accuracy"){ # d = data.frame
     pos.row <- c()
     neg.row <- c()
     for( i in 1:nrow(d) ){
-        mdl <- lda(d[-i,],cls[-i])
+        mdl <- lda(as.matrix(d[-i,]),cls[-i])
         res <- predict(mdl,d[i,])
         if( res$class == PosClass ){
             pos.row <- c(pos.row,i)
