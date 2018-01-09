@@ -10,7 +10,7 @@ aclda <- function(d,label,CV="loo",seat=c(),measure="accuracy",missprint=FALSE){
         }
         seat <- expand.grid(x)
         names(seat) <- names(d)
-        seat <- seat[-which(apply(seat,1,sum)<2),]
+        seat <- seat[-which(apply(seat,1,sum)<1),]
     }
 
     ## run lda
