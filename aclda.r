@@ -25,9 +25,9 @@ aclda <- function(d,label,CV="loo",seat=c(),measure="accuracy",missprint=FALSE){
 }
 
 get.measure <- function(d,cls,measure="accuracy"){ # d = data.frame
+    measure <- tolower(measure)
     if(measure=="auc"){
         mdl <- lda(as.matrix(d),cls)
-        ## browser()
         res <- predict(mdl,as.matrix(d))
         return(get.auc(res$x,cls))
     }
