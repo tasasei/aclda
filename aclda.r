@@ -84,8 +84,11 @@ get.auc <- function(x,cls){
 
 # 入力 x(matrix) をテキスト付きプロット
 image_text<- function(x,#RemNum,
-                       main=c(),dig=3,xcex=1.0,...){ #
+                       main=c(),dig=3,xcex=1.0,col.label=NULL...){ #
     ## main <- c()
+    if(is.null(col.label)){
+        col.label <- colnames(x)
+    }
     logic.point <- which(x[1,]==TRUE)
     logic.point <- c(logic.point,which(x[1,]==FALSE))
     x <- as.matrix(head(x,30))
@@ -108,7 +111,7 @@ image_text<- function(x,#RemNum,
     x2[,-(logic.point)] <- FALSE
     image(t(x2[nrow(x2):1,ncol(x2):1])[ncol(x2):1,],col=c(rep("white",1000),"black"),axes=FALSE,main=main) #axes=F で軸消去
     text(xy,labels=signif(x,digits=dig))
-    mtext(text=colnames(x),side=1,at=(0:(ncol(x)-1)/(ncol(x)-1)),las=3,cex=xcex)#列名
+    mtext(text=col.label,side=1,at=(0:(ncol(x)-1)/(ncol(x)-1)),las=3,cex=xcex)#列名
     mtext(text=rev(row(x)[,1]),side=2,at=(0:(nrow(x)-1)/(nrow(x)-1)),las=1)#行数
     abline(v=at_v[seq(3,length(at_v)-1,by=2)]
           ,h=at_h[seq(3,length(at_h)-1,by=2)],col=8)
