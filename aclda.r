@@ -83,7 +83,7 @@ get.auc <- function(x,cls){
 }
 
 # 入力 x(matrix) をテキスト付きプロット
-image_text<- function(x,#RemNum,
+image.text<- function(x,#RemNum,
                        main=c(),dig=3,xcex=1.0,col.label=NULL,col.las=3,col.line=0,...){ #
     ## main <- c()
     if(is.null(col.label)){
